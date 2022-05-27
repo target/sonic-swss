@@ -47,6 +47,7 @@
 #include "nvgreorch.h"
 
 using namespace swss;
+extern bool gSaiRedisLogRotate;
 
 class OrchDaemon
 {
@@ -79,6 +80,7 @@ private:
     Select *m_select;
 
     void flush();
+    void logRotate();
 };
 
 class FabricOrchDaemon : public OrchDaemon

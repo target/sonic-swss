@@ -20,7 +20,6 @@ using namespace swss;
 
 extern sai_switch_api_t*           sai_switch_api;
 extern sai_object_id_t             gSwitchId;
-extern bool                        gSaiRedisLogRotate;
 
 extern void syncd_apply_view();
 /*
@@ -57,6 +56,7 @@ FlowCounterRouteOrch *gFlowCounterRouteOrch;
 DebugCounterOrch *gDebugCounterOrch;
 
 bool gIsNatSupported = false;
+bool gSaiRedisLogRotate = false;
 
 #define DEFAULT_MAX_BULK_SIZE 1000
 size_t gMaxBulkSize = DEFAULT_MAX_BULK_SIZE;
@@ -658,24 +658,22 @@ void OrchDaemon::flush()
         SWSS_LOG_ERROR("Failed to flush redis pipeline %d", status);
         abort();
     }
-
-    // check if logroate is requested
-    if (gSaiRedisLogRotate)
-    {
-        SWSS_LOG_NOTICE("performing log rotate");
-
-        gSaiRedisLogRotate = false;
-
-        attr.id = SAI_REDIS_SWITCH_ATTR_PERFORM_LOG_ROTATE;
-        attr.value.booldata = true;
-
-        sai_switch_api->set_switch_attribute(gSwitchId, &attr);
-    }
 }
+
+/* Release the file handle so the log can be rotated */
+void OrchDaemon::logRotate() {
+    SWSS_LOG_ENTER();
+    sai_attribute_t attr;
+    attr.id = SAI_REDIS_SWITCH_ATTR_PERFORM_LOG_ROTATE;
+    attr.value.booldata = true;
+    sai_switch_api->set_switch_attribute(gSwitchId, &attr);
+}
+
 
 void OrchDaemon::start()
 {
     SWSS_LOG_ENTER();
+    gSaiRedisLogRotate = false;
 
     for (Orch *o : m_orchList)
     {
@@ -716,6 +714,17 @@ void OrchDaemon::start()
              * requests live in it. When the daemon has nothing to do, it
              * is a good chance to flush the pipeline  */
             flush();
+            continue;
+        }
+
+        // check if logroate is requested
+        if (gSaiRedisLogRotate)
+        {
+            SWSS_LOG_NOTICE("performing log rotate");
+
+            gSaiRedisLogRotate = false;
+
+            logRotate();
             continue;
         }
 
