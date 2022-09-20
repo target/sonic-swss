@@ -78,7 +78,8 @@ class TestBuffer(object):
     @pytest.fixture
     def setup_teardown_test(self, dvs):
         self.setup_db(dvs)
-        self.set_port_qos_table(self.INTF, '2,3,4,6')
+        self.set_port_qos_table(self.INTF, '3,4')
+        self.lossless_pg_combinations = ['3-4']
         time.sleep(2)
 
         yield
@@ -136,7 +137,7 @@ class TestBuffer(object):
             self.app_db.wait_for_deleted_entry("BUFFER_PROFILE_TABLE", test_lossless_profile)
 
             # buffer pgs should still point to the original buffer profile
-            for pg in self.lossless_pgs:
+            for pg in self.lossless_pg_combinations:
                 self.app_db.wait_for_field_match("BUFFER_PG_TABLE", self.INTF + ":" + pg, {"profile": orig_lossless_profile})
             fvs = dict()
             for pg in self.pg_name_map:
@@ -221,7 +222,7 @@ class TestBuffer(object):
             self.app_db.wait_for_entry("BUFFER_PROFILE_TABLE", new_lossless_profile)
 
             # Verify BUFFER_PG is updated
-            for pg in self.lossless_pgs:
+            for pg in self.lossless_pg_combinations:
                 self.app_db.wait_for_field_match("BUFFER_PG_TABLE", self.INTF + ":" + pg, {"profile": new_lossless_profile})
 
             fvs_negative = {}
@@ -232,9 +233,10 @@ class TestBuffer(object):
 
              # Add pfc_enable field for extra port
             self.set_port_qos_table(extra_port, '2,3,4,6')
+            self.lossless_pg_combinations = ['2-4', '6']
             time.sleep(1)
             # Verify BUFFER_PG is updated when pfc_enable is available
-            for pg in self.lossless_pgs:
+            for pg in self.lossless_pg_combinations:
                 self.app_db.wait_for_field_match("BUFFER_PG_TABLE", extra_port + ":" + pg, {"profile": new_lossless_profile})
         finally:
             if orig_cable_len:

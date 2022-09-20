@@ -20,6 +20,7 @@ using namespace swss;
 
 extern sai_switch_api_t*           sai_switch_api;
 extern sai_object_id_t             gSwitchId;
+extern bool                        gSaiRedisLogRotate;
 
 extern void syncd_apply_view();
 /*
@@ -57,6 +58,7 @@ DebugCounterOrch *gDebugCounterOrch;
 
 bool gIsNatSupported = false;
 bool gSaiRedisLogRotate = false;
+event_handle_t g_events_handle;
 
 #define DEFAULT_MAX_BULK_SIZE 1000
 size_t gMaxBulkSize = DEFAULT_MAX_BULK_SIZE;
@@ -89,6 +91,8 @@ OrchDaemon::~OrchDaemon()
         delete(*it);
     }
     delete m_select;
+
+    events_deinit_publisher(g_events_handle);
 }
 
 bool OrchDaemon::init()
@@ -96,6 +100,8 @@ bool OrchDaemon::init()
     SWSS_LOG_ENTER();
 
     string platform = getenv("platform") ? getenv("platform") : "";
+
+    g_events_handle = events_init_publisher("sonic-events-swss");
 
     gCrmOrch = new CrmOrch(m_configDb, CFG_CRM_TABLE_NAME);
 
@@ -346,7 +352,7 @@ bool OrchDaemon::init()
      * when iterating ConsumerMap. This is ensured implicitly by the order of keys in ordered map.
      * For cases when Orch has to process tables in specific order, like PortsOrch during warm start, it has to override Orch::doTask()
      */
-    m_orchList = { gSwitchOrch, gCrmOrch, gPortsOrch, gBufferOrch, gFlowCounterRouteOrch, mux_orch, mux_cb_orch, gIntfsOrch, gNeighOrch, gNhgMapOrch, gNhgOrch, gCbfNhgOrch, gRouteOrch, gCoppOrch, gQosOrch, wm_orch, gPolicerOrch, tunnel_decap_orch, sflow_orch, gDebugCounterOrch, gMacsecOrch, gBfdOrch, gSrv6Orch};
+    m_orchList = { gSwitchOrch, gCrmOrch, gPortsOrch, gBufferOrch, gFlowCounterRouteOrch, gIntfsOrch, gNeighOrch, gNhgMapOrch, gNhgOrch, gCbfNhgOrch, gRouteOrch, gCoppOrch, gQosOrch, wm_orch, gPolicerOrch, tunnel_decap_orch, sflow_orch, gDebugCounterOrch, gMacsecOrch, gBfdOrch, gSrv6Orch, mux_orch, mux_cb_orch};
 
     bool initialize_dtel = false;
     if (platform == BFN_PLATFORM_SUBSTRING || platform == VS_PLATFORM_SUBSTRING)
@@ -597,13 +603,26 @@ bool OrchDaemon::init()
             SAI_QUEUE_ATTR_PAUSE_STATUS,
         };
 
-        m_orchList.push_back(new PfcWdSwOrch<PfcWdAclHandler, PfcWdLossyHandler>(
-                    m_configDb,
-                    pfc_wd_tables,
-                    portStatIds,
-                    queueStatIds,
-                    queueAttrIds,
-                    PFC_WD_POLL_MSECS));
+        if(gSwitchOrch->checkPfcDlrInitEnable())
+        {
+            m_orchList.push_back(new PfcWdSwOrch<PfcWdDlrHandler, PfcWdLossyHandler>(
+                        m_configDb,
+                        pfc_wd_tables,
+                        portStatIds,
+                        queueStatIds,
+                        queueAttrIds,
+                        PFC_WD_POLL_MSECS));
+        }
+        else
+        {
+            m_orchList.push_back(new PfcWdSwOrch<PfcWdAclHandler, PfcWdLossyHandler>(
+                        m_configDb,
+                        pfc_wd_tables,
+                        portStatIds,
+                        queueStatIds,
+                        queueAttrIds,
+                        PFC_WD_POLL_MSECS));
+        }
     } else if (platform == CISCO_8000_PLATFORM_SUBSTRING)
     {
         static const vector<sai_port_stat_t> portStatIds;
