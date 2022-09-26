@@ -68,6 +68,7 @@ public:
     {
         m_fabricEnabled = enabled;
     }
+    void logRotate();
 private:
     DBConnector *m_applDb;
     DBConnector *m_configDb;
@@ -80,7 +81,6 @@ private:
     Select *m_select;
 
     void flush();
-    void logRotate();
 };
 
 class FabricOrchDaemon : public OrchDaemon
