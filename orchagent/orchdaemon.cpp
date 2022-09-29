@@ -686,7 +686,6 @@ void OrchDaemon::logRotate() {
     attr.id = SAI_REDIS_SWITCH_ATTR_PERFORM_LOG_ROTATE;
     attr.value.booldata = true;
     sai_status_t status = sai_switch_api->set_switch_attribute(gSwitchId, &attr);
-    return;
     if (status != SAI_STATUS_SUCCESS)
     {
         SWSS_LOG_ERROR("Failed to release the file handle on sairedis log %d", status);
