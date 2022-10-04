@@ -687,6 +687,7 @@ void OrchDaemon::logRotate() {
     }
 }
 
+
 void OrchDaemon::start()
 {
     SWSS_LOG_ENTER();

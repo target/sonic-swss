@@ -44,9 +44,9 @@ namespace orchdaemon_test
     };
 
     TEST_F(OrchDaemonTest, logRotate)
-{
-    EXPECT_CALL(mock_sai_switch_, set_switch_attribute( _, _)).WillOnce(Return(SAI_STATUS_SUCCESS));
+    {
+        EXPECT_CALL(mock_sai_switch_, set_switch_attribute( _, _)).WillOnce(Return(SAI_STATUS_SUCCESS));
 
-    orchd->logRotate();
-}
+        orchd->logRotate();
+    }
 }
