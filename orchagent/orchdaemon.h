@@ -48,6 +48,7 @@
 #include <sairedis.h>
 
 using namespace swss;
+extern bool gSaiRedisLogRotate;
 
 class OrchDaemon
 {
