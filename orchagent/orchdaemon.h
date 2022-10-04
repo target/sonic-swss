@@ -45,6 +45,7 @@
 #include "bfdorch.h"
 #include "srv6orch.h"
 #include "nvgreorch.h"
+#include <sairedis.h>
 
 using namespace swss;
 
@@ -67,6 +68,7 @@ public:
     {
         m_fabricEnabled = enabled;
     }
+    void logRotate();
 private:
     DBConnector *m_applDb;
     DBConnector *m_configDb;
